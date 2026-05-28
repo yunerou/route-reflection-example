@@ -1,0 +1,80 @@
+INFO:
+  ENV: "dev"
+  POD_NAME: "niarb-pod-1"
+
+AUTO_MIGRATION: true
+
+RATE_LIMITER:
+  USER_RATE: 100
+  USER_BURST: 200
+  ANONYMOUS_RATE: 10
+  ANONYMOUS_BURST: 20
+
+WORKER_POOL:
+  BUFFER: 128
+  UPPER_THRESHOLD: 64
+  LOWER_THRESHOLD: 16
+
+EXTRACT_HEADER:
+  TRACE_ID_HEADER: "X-Trace-Id"
+  IP_HEADER: "X-Real-Ip"
+  AUTH_HEADER: "Authorization"
+
+CORS:
+  ENABLED: true
+  EXACTLY_ORIGINS: []
+  REGEX_ORIGINS:
+    - ws://localhost:([0-9]+)
+    - wss://localhost:([0-9]+)
+    - http://localhost:([0-9]+)
+    - https://localhost:([0-9]+)
+
+OTEL:
+  ENABLED: false
+  LOG_LEVEL: 0
+  AUTO_INSTRUMENTATION: false
+  EXPORTER_TYPE: "discard"
+  FILE_PATH: ""
+  COLLECTOR_ENDPOINT: ""
+  COLLECTOR_INSECURE: false
+
+VALKEY:
+  PRIMARY_ADDRESS: "localhost:29100"
+  REPLICA_ADDRESS: "localhost:29100"
+  PASSWORD: "veryStrongP@ssw0rd"
+  DB_INDEX: 0
+
+POSTGRES:
+  CREATE_TABLES: true
+  HOST: "localhost"
+  PORT: 29102
+  DB_NAME: "postgres"
+  USER: "postgres"
+  PASSWORD: "postgres"
+  SSL_MODE: "disable"
+  MAX_CONNS: 15
+  MIN_CONNS: 1
+
+QDRANT:
+  URL: "http://localhost:6333"
+  # API_KEY: null
+  TIMEOUT: 10s
+
+S3:
+  REGION: "ap-northeast-1"
+  BUCKET: "knomas-dev"
+  ENDPOINT: "http://localhost:9000"
+  FORCE_PATH_STYLE: true
+  # STATIC_ACCESS_KEY: null
+  # STATIC_SECRET_KEY: null
+
+LLM_EMBEDDING:
+  BASE_URL: "http://localhost:11434/v1"
+  MODEL: "nomic-embed-text"
+  # API_KEY: null
+  DIMENSION: 768
+
+LLM_CHAT:
+  BASE_URL: "http://localhost:11434/v1"
+  MODEL: "llama3.1:8b-instruct"
+  # API_KEY: null

@@ -1,0 +1,167 @@
+# =============================================================================
+# Application Configuration Example
+# Copy this file to config.yaml and adjust values for your environment.
+# Environment variables prefixed with `APP_` will override these values
+# (e.g. APP_POSTGRES__PASSWORD=secret).
+# =============================================================================
+
+INFO:
+  # Deployment environment name (e.g. development, staging, production)
+  ENV: "dev"
+  # Pod / instance name; useful when running on Kubernetes
+  POD_NAME: "niarb-pod-1"
+
+# Run database auto-migration on startup
+AUTO_MIGRATION: true
+
+# -----------------------------------------------------------------------------
+# Per-IP / per-user rate limits (requests per second)
+# -----------------------------------------------------------------------------
+RATE_LIMITER:
+  USER_RATE: 30
+  USER_BURST: 60
+  ANONYMOUS_RATE: 5
+  ANONYMOUS_BURST: 10
+
+# -----------------------------------------------------------------------------
+# Worker pool sizing
+# -----------------------------------------------------------------------------
+WORKER_POOL:
+  BUFFER: 64
+  UPPER_THRESHOLD: 48
+  LOWER_THRESHOLD: 16
+
+# -----------------------------------------------------------------------------
+# Reverse-proxy header extraction
+# -----------------------------------------------------------------------------
+EXTRACT_HEADER:
+  TRACE_ID_HEADER: "X-Trace-Id"
+  IP_HEADER: "X-Real-Ip"
+  AUTH_HEADER: "Authorization"
+
+# -----------------------------------------------------------------------------
+# CORS
+# -----------------------------------------------------------------------------
+CORS:
+  ENABLED: true
+  # Exact origin matches (e.g. "https://app.example.com")
+  EXACTLY_ORIGINS: []
+  # Regex origin matches
+  REGEX_ORIGINS:
+    - ws://localhost:([0-9]+)
+    - wss://localhost:([0-9]+)
+    - http://localhost:([0-9]+)
+    - https://localhost:([0-9]+)
+
+# -----------------------------------------------------------------------------
+# OpenTelemetry
+# -----------------------------------------------------------------------------
+OTEL:
+  ENABLED: false
+  # Debug = -4, Info = 0, Warn = 4, Error = 8
+  LOG_LEVEL: 0
+  AUTO_INSTRUMENTATION: false
+  # One of: discard, stdout, file, otlp-grpc, otlp-http
+  EXPORTER_TYPE: "discard"
+  # Required when EXPORTER_TYPE is "file"
+  FILE_PATH: ""
+  # Required when EXPORTER_TYPE is "otlp-grpc" or "otlp-http"
+  COLLECTOR_ENDPOINT: ""
+  COLLECTOR_INSECURE: false
+
+# -----------------------------------------------------------------------------
+# Valkey / Redis
+# -----------------------------------------------------------------------------
+VALKEY:
+  PRIMARY_ADDRESS: "localhost:29100"
+  REPLICA_ADDRESS: "localhost:29100"
+  PASSWORD: "veryStrongP@ssw0rd"
+  DB_INDEX: 0
+
+# -----------------------------------------------------------------------------
+# PostgreSQL
+# -----------------------------------------------------------------------------
+POSTGRES:
+  CREATE_TABLES: true
+  HOST: "localhost"
+  PORT: 29102
+  DB_NAME: "postgres"
+  USER: "postgres"
+  PASSWORD: "postgres"
+  # Allowed values: disable, require
+  SSL_MODE: "disable"
+  MAX_CONNS: 15
+  MIN_CONNS: 1
+
+# -----------------------------------------------------------------------------
+# Qdrant (vector database)
+# -----------------------------------------------------------------------------
+QDRANT:
+  URL: "http://localhost:6333"
+  # API_KEY: null
+  TIMEOUT: 10s
+
+# -----------------------------------------------------------------------------
+# S3-compatible object storage (AWS S3 / MinIO / rustfs)
+# -----------------------------------------------------------------------------
+S3:
+  REGION: "ap-northeast-1"
+  BUCKET: "knomas-dev"
+  # Custom endpoint for MinIO / rustfs / LocalStack. Omit for AWS S3.
+  ENDPOINT: "http://localhost:9000"
+  # true for MinIO/rustfs, false for AWS S3
+  FORCE_PATH_STYLE: true
+  # STATIC_ACCESS_KEY: null
+  # STATIC_SECRET_KEY: null
+
+# -----------------------------------------------------------------------------
+# LLM Embedding service
+# -----------------------------------------------------------------------------
+LLM_EMBEDDING:
+  # Provider selector. Allowed: openai (default) | gemini-aistudio | gemini-vertex
+  PROVIDER: "openai"
+
+  # ----- openai / openai-compatible (Ollama, vLLM, ...) -----
+  # OpenAI-compatible endpoint
+  BASE_URL: "http://localhost:11434/v1"
+  MODEL: "nomic-embed-text"
+  # API_KEY: null
+  # Embedding vector dimension; must match the model
+  DIMENSION: 768
+
+  # ----- gemini-aistudio (uncomment when PROVIDER=gemini-aistudio) -----
+  # MODEL: "text-embedding-004"
+  # API_KEY: "AIza..."
+  # DIMENSION: 768
+  # TASK_TYPE: "RETRIEVAL_DOCUMENT"   # RETRIEVAL_DOCUMENT | RETRIEVAL_QUERY | SEMANTIC_SIMILARITY | CLASSIFICATION | CLUSTERING
+
+  # ----- gemini-vertex (uncomment when PROVIDER=gemini-vertex) -----
+  # MODEL: "text-multilingual-embedding-002"
+  # PROJECT_ID: "my-gcp-project"
+  # LOCATION: "us-central1"
+  # DIMENSION: 768
+  # TASK_TYPE: "RETRIEVAL_DOCUMENT"
+  # CREDENTIALS_FILE: "/etc/gcp/sa.json"   # optional; nil → Application Default Credentials
+
+# -----------------------------------------------------------------------------
+# LLM Chat completion service
+# -----------------------------------------------------------------------------
+LLM_CHAT:
+  # Provider selector. Allowed: openai (default) | gemini-aistudio | gemini-vertex
+  PROVIDER: "openai"
+
+  # ----- openai / openai-compatible (Ollama, vLLM, ...) -----
+  # OpenAI-compatible endpoint
+  BASE_URL: "http://localhost:11434/v1"
+  MODEL: "llama3.1:8b-instruct"
+  # API_KEY: null
+
+  # ----- gemini-aistudio (uncomment when PROVIDER=gemini-aistudio) -----
+  # MODEL: "gemini-1.5-flash"
+  # API_KEY: "AIza..."
+
+  # ----- gemini-vertex (uncomment when PROVIDER=gemini-vertex) -----
+  # MODEL: "gemini-1.5-flash"
+  # PROJECT_ID: "my-gcp-project"
+  # LOCATION: "us-central1"
+  # CREDENTIALS_FILE: "/etc/gcp/sa.json"   # optional; nil → Application Default Credentials

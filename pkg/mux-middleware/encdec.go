@@ -1,0 +1,45 @@
+package muxmiddleware
+
+import (
+	"net/http"
+
+	"github.com/yunerou/niarb/shared/actx"
+	"github.com/yunerou/niarb/shared/encdec"
+)
+
+const (
+	contentTypeMsgpack = "application/msgpack"
+	contentTypeJSON    = "application/json; charset=utf-8"
+)
+
+// EncoderDecoder picks an encoder/decoder pair based on the request Accept
+// header (msgpack when wantsMsgpack reports true, otherwise JSON), stores
+// them in actx, and writes the matching Content-Type response header so
+// downstream handlers do not need to inspect the request again.
+func (mw *middlewareProvider) EncoderDecoder() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var (
+				enc         encdec.Encoder
+				dec         encdec.Decoder
+				contentType string
+			)
+			if wantsMsgpack(r) {
+				enc = encdec.MsgpackEncoder(w)
+				dec = encdec.MsgpackDecoder(r.Body)
+				contentType = contentTypeMsgpack
+			} else {
+				enc = encdec.JSONEncoder(w)
+				dec = encdec.JSONDecoder(r.Body)
+				contentType = contentTypeJSON
+			}
+
+			aCtx := actx.From(r.Context())
+			aCtx.SetEncoderDecoder(enc, dec)
+
+			w.Header().Set("Content-Type", contentType)
+
+			next.ServeHTTP(w, r.WithContext(aCtx))
+		})
+	}
+}
