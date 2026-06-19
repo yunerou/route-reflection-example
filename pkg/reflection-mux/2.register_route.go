@@ -56,8 +56,8 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
 		Method:             method,
 		Path:               fullPath,
 		Meta:               meta,
-		RequestBodySchema:  typeToSchema(reflect.TypeFor[ReqBodyT](), 0),
-		ResponseBodySchema: typeToSchema(reflect.TypeFor[RespBodyT](), 0),
+		RequestBodySchema:  typeToSchema(reflect.TypeFor[ReqBodyT]()),
+		ResponseBodySchema: typeToSchema(reflect.TypeFor[RespBodyT]()),
 	}
 
 	structPathParams := map[string]struct{}{}
@@ -307,32 +307,70 @@ func fetchDocComment(structType reflect.Type, field reflect.StructField) string 
 	return ""
 }
 
-func typeToSchema(t reflect.Type, indent int) string {
-	prefix := strings.Repeat("  ", indent)
+// typeToSchema mô tả schema của reflect.Type dưới dạng JSON (json.RawMessage),
+// giúp nhìn thấy cấu trúc của type đó. Output luôn là JSON hợp lệ:
+//   - struct  -> object {fieldName: <schema>} (giữ nguyên thứ tự field)
+//   - slice   -> [<schema phần tử>]
+//   - pointer -> schema của type được trỏ tới
+//   - map     -> {"map[keyKind]": <schema value>}
+//   - còn lại -> chuỗi tên kind, ví dụ "string", "int", "bool"
+func typeToSchema(t reflect.Type) json.RawMessage {
+	if t == nil {
+		return json.RawMessage("null")
+	}
 
 	switch t.Kind() {
 	case reflect.Struct:
+		// Struct rỗng (vd: struct{}) coi như "không có body" -> trả về null.
+		if t.NumField() == 0 {
+			return json.RawMessage("null")
+		}
 		var sb strings.Builder
-		sb.WriteString("{\n")
+		sb.WriteByte('{')
+		first := true
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			jsonTag := field.Tag.Get("json")
 			name := field.Name
-			if jsonTag != "" && jsonTag != "-" {
-				name = strings.Split(jsonTag, ",")[0]
+			if jsonTag != "" {
+				tagName := strings.Split(jsonTag, ",")[0]
+				if tagName == "-" {
+					continue
+				}
+				if tagName != "" {
+					name = tagName
+				}
 			}
-			fmt.Fprintf(&sb, "%s  %s: %s\n", prefix, name, typeToSchema(field.Type, indent+1))
+			if !first {
+				sb.WriteByte(',')
+			}
+			first = false
+			key, _ := json.Marshal(name)
+			sb.Write(key)
+			sb.WriteByte(':')
+			sb.Write(typeToSchema(field.Type))
 		}
-		sb.WriteString(prefix)
-		sb.WriteString("}")
-		return sb.String()
-	case reflect.Slice:
-		return "[]" + typeToSchema(t.Elem(), indent)
+		sb.WriteByte('}')
+		return json.RawMessage(sb.String())
+	case reflect.Slice, reflect.Array:
+		var sb strings.Builder
+		sb.WriteByte('[')
+		sb.Write(typeToSchema(t.Elem()))
+		sb.WriteByte(']')
+		return json.RawMessage(sb.String())
 	case reflect.Pointer:
-		return "*" + typeToSchema(t.Elem(), indent)
+		return typeToSchema(t.Elem())
 	case reflect.Map:
-		return fmt.Sprintf("map[%s]%s", t.Key().Kind(), typeToSchema(t.Elem(), indent))
+		var sb strings.Builder
+		sb.WriteByte('{')
+		key, _ := json.Marshal(fmt.Sprintf("map[%s]", t.Key().Kind()))
+		sb.Write(key)
+		sb.WriteByte(':')
+		sb.Write(typeToSchema(t.Elem()))
+		sb.WriteByte('}')
+		return json.RawMessage(sb.String())
 	default:
-		return t.Kind().String()
+		val, _ := json.Marshal(t.Kind().String())
+		return json.RawMessage(val)
 	}
 }

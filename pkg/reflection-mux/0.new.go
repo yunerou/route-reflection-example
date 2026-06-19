@@ -4,20 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
 )
 
 func NewCore() CoreReflectionMux {
-	muxInstance := &coreReflectionMux{
-		lazyRegisters: []func(){},
-		routeInfo:     []RouteInfo{},
-		serveOnce:     sync.Once{},
-	}
-
-	return muxInstance
+	return &coreReflectionMux{}
 }
 
-func ExtractReflectionMux(muxes ...PathReflectionMux) http.Handler {
+type reflectionResponse struct {
+	CommonInfo CommonInfo  `json:"common"`
+	Routes     []RouteInfo `json:"routes"`
+}
+
+func ExtractReflectionMux(m CoreReflectionMux) http.Handler {
 	mainMux := http.NewServeMux()
 	allRoutesInfo := []RouteInfo{}
 
@@ -25,7 +23,7 @@ func ExtractReflectionMux(muxes ...PathReflectionMux) http.Handler {
 	reflectionPattern := "GET /__reflection"
 	seenPatterns := map[string]struct{}{reflectionPattern: {}}
 
-	for _, mux := range muxes {
+	for _, mux := range m.GetAllPaths() {
 		// Register routes to mainMux
 		for _, handler := range mux.getHandlers() {
 			pattern := handler.Pattern()
@@ -38,9 +36,13 @@ func ExtractReflectionMux(muxes ...PathReflectionMux) http.Handler {
 		allRoutesInfo = append(allRoutesInfo, mux.reflectionRouteInfo()...)
 	}
 	// Add reflection route
+	mt := m.(*coreReflectionMux)
 	mainMux.HandleFunc(reflectionPattern, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(allRoutesInfo)
+		_ = json.NewEncoder(w).Encode(reflectionResponse{
+			CommonInfo: mt.commonInfo,
+			Routes:     allRoutesInfo,
+		})
 	})
 
 	return mainMux

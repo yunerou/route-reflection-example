@@ -1,32 +1,41 @@
 package reflectionmux
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 )
 
 type coreReflectionMux struct {
+	commonInfo CommonInfo
+
+	paths map[string]PathReflectionMux
+}
+
+type pathReflectionMux struct {
+	*coreReflectionMux
+	prefixRoute string
+
+	// Per-path registration state. Each path prefix owns its own handlers and
+	// route info so that ExtractReflectionMux can iterate every path without
+	// re-registering another path's routes.
 	lazyRegisters []func()
 	serveOnce     sync.Once
 	routeInfo     []RouteInfo
 	routeHandlers []RoutHandler
 }
 
-type pathReflectionMux struct {
-	*coreReflectionMux
-	prefixRoute string
-}
-
-func (m *coreReflectionMux) getHandlers() []RoutHandler {
+func (m *pathReflectionMux) getHandlers() []RoutHandler {
 	m.runLazyRegister()
 	return m.routeHandlers
 }
 
-func (m *coreReflectionMux) reflectionRouteInfo() []RouteInfo {
+func (m *pathReflectionMux) reflectionRouteInfo() []RouteInfo {
 	m.runLazyRegister()
 	return m.routeInfo
 }
 
-func (m *coreReflectionMux) runLazyRegister() {
+func (m *pathReflectionMux) runLazyRegister() {
 	m.serveOnce.Do(func() {
 		m.routeHandlers = make([]RoutHandler, 0)
 		for _, lazyRegister := range m.lazyRegisters {
@@ -37,8 +46,44 @@ func (m *coreReflectionMux) runLazyRegister() {
 }
 
 func (c *coreReflectionMux) Create(pathPrefix string) PathReflectionMux {
-	return &pathReflectionMux{
-		coreReflectionMux: c,
-		prefixRoute:       pathPrefix,
+	trimmedPrefix := strings.Trim(pathPrefix, "/")
+
+	// 1) Validate the prefix: only allow path-safe characters.
+	if !isValidPathPrefix(trimmedPrefix) {
+		panic(fmt.Sprintf("invalid path prefix %q: only letters, digits, '-', '_', '.' and '/' are allowed", pathPrefix))
 	}
+
+	if c.paths == nil {
+		c.paths = make(map[string]PathReflectionMux)
+	}
+
+	// 2) Reuse the existing mux when the prefix was already created.
+	if existing, ok := c.paths[trimmedPrefix]; ok {
+		return existing
+	}
+
+	c.paths[trimmedPrefix] = &pathReflectionMux{
+		coreReflectionMux: c,
+		prefixRoute:       trimmedPrefix,
+	}
+	return c.paths[trimmedPrefix]
+}
+
+// isValidPathPrefix reports whether prefix contains only path-safe characters:
+// letters, digits, '-', '_', '.' and '/'. An empty prefix (root) is valid.
+func isValidPathPrefix(prefix string) bool {
+	for _, r := range prefix {
+		switch {
+		case r >= 'a' && r <= 'z',
+			r >= 'A' && r <= 'Z',
+			r >= '0' && r <= '9',
+			r == '-', r == '_', r == '.', r == '/':
+		default:
+			return false
+		}
+	}
+	return true
+}
+func (c *coreReflectionMux) GetAllPaths() map[string]PathReflectionMux {
+	return c.paths
 }
