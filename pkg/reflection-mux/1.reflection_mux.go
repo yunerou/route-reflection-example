@@ -4,30 +4,29 @@ import (
 	"sync"
 )
 
-type reflectionMux struct {
-	prefixRoute   string
+type coreReflectionMux struct {
 	lazyRegisters []func()
 	serveOnce     sync.Once
-
 	routeInfo     []RouteInfo
 	routeHandlers []RoutHandler
 }
 
-func (m *reflectionMux) SetPathPrefix(prefix string) {
-	m.prefixRoute = prefix
+type pathReflectionMux struct {
+	*coreReflectionMux
+	prefixRoute string
 }
 
-func (m *reflectionMux) getHandlers() []RoutHandler {
+func (m *coreReflectionMux) getHandlers() []RoutHandler {
 	m.runLazyRegister()
 	return m.routeHandlers
 }
 
-func (m *reflectionMux) reflectionRouteInfo() []RouteInfo {
+func (m *coreReflectionMux) reflectionRouteInfo() []RouteInfo {
 	m.runLazyRegister()
 	return m.routeInfo
 }
 
-func (m *reflectionMux) runLazyRegister() {
+func (m *coreReflectionMux) runLazyRegister() {
 	m.serveOnce.Do(func() {
 		m.routeHandlers = make([]RoutHandler, 0)
 		for _, lazyRegister := range m.lazyRegisters {
@@ -35,4 +34,11 @@ func (m *reflectionMux) runLazyRegister() {
 		}
 		m.lazyRegisters = nil
 	})
+}
+
+func (c *coreReflectionMux) Create(pathPrefix string) PathReflectionMux {
+	return &pathReflectionMux{
+		coreReflectionMux: c,
+		prefixRoute:       pathPrefix,
+	}
 }

@@ -1,17 +1,27 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
-	reflectionmux "github.com/yunerou/niarb/pkg/reflection-mux"
+	rmux "github.com/yunerou/niarb/pkg/reflection-mux"
 )
 
 func (c *SvCmd) router(_ ServerType) http.Handler {
-	exampleMux := reflectionmux.NewReflectionMux()
-	// exampleMux.SetPathPrefix("test")
+	coreMux := rmux.NewCore()
 
-	reflectionmux.RegisterRoute(exampleMux, "GET", "/test/{param1}/{param2}",
-		reflectionmux.RouteMeta{},
+	mainMux := coreMux.Create("")
+	rmux.RegisterRoute(mainMux, "GET", "/health",
+		rmux.RouteMeta{},
+		func(ctx context.Context, reqParam struct{}, reqBody struct{}) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		c.simpleMiddleware,
+	)
+
+	exampleMux := coreMux.Create("test")
+	rmux.RegisterRoute(exampleMux, "GET", "/test/{param1}/{param2}",
+		rmux.RouteMeta{},
 		c.exampleHandler.ExampleHandlerFunc,
 		c.allMiddilewares,
 	)
@@ -28,5 +38,5 @@ func (c *SvCmd) router(_ ServerType) http.Handler {
 	// 	),
 	// )
 
-	return reflectionmux.ExtractReflectionMux(exampleMux)
+	return rmux.ExtractReflectionMux(exampleMux)
 }

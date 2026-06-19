@@ -28,8 +28,6 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valkey-io/valkey-go v1.0.74
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/yuin/goldmark v1.8.2
-	github.com/yuin/goldmark-meta v1.1.0
 	github.com/yunerou/aerro v0.0.8
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
 	go.opentelemetry.io/otel v1.43.0
@@ -42,7 +40,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sync v0.20.0
 	google.golang.org/grpc v1.80.0
 )
 
@@ -75,7 +72,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 )
 
 require (

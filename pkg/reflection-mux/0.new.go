@@ -7,18 +7,17 @@ import (
 	"sync"
 )
 
-func NewReflectionMux() ReflectionMux {
-	muxInstance := &reflectionMux{
-		prefixRoute:   "",
-		routeInfo:     []RouteInfo{},
+func NewCore() CoreReflectionMux {
+	muxInstance := &coreReflectionMux{
 		lazyRegisters: []func(){},
+		routeInfo:     []RouteInfo{},
 		serveOnce:     sync.Once{},
 	}
 
 	return muxInstance
 }
 
-func ExtractReflectionMux(muxes ...ReflectionMux) http.Handler {
+func ExtractReflectionMux(muxes ...PathReflectionMux) http.Handler {
 	mainMux := http.NewServeMux()
 	allRoutesInfo := []RouteInfo{}
 
@@ -47,7 +46,7 @@ func ExtractReflectionMux(muxes ...ReflectionMux) http.Handler {
 	return mainMux
 }
 
-func RegisterRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](mux ReflectionMux,
+func RegisterRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](mux PathReflectionMux,
 	method string,
 	path string,
 	meta RouteMeta,

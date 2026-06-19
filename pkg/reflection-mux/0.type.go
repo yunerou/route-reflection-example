@@ -17,8 +17,11 @@ func (r RoutHandler) Handler() http.Handler {
 	return r.h
 }
 
-type ReflectionMux interface {
-	SetPathPrefix(prefix string)
+type CoreReflectionMux interface {
+	Create(PathPrefix string) PathReflectionMux
+}
+
+type PathReflectionMux interface {
 	getHandlers() []RoutHandler
 	reflectionRouteInfo() []RouteInfo
 }

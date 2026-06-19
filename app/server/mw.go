@@ -12,6 +12,13 @@ import (
 
 type middleware = func(http.Handler) http.Handler
 
+func (c *SvCmd) simpleMiddleware(h http.Handler) http.Handler {
+	mw := []middleware{
+		setDefaultEncoderDecoder(),
+	}
+	return chainMiddleware(h, mw...)
+}
+
 func (c *SvCmd) allMiddilewares(h http.Handler) http.Handler {
 	e := c.c.Env()
 
@@ -21,7 +28,7 @@ func (c *SvCmd) allMiddilewares(h http.Handler) http.Handler {
 		c.mw.RequestID(func(ctx context.Context, rId string) context.Context {
 			aCtx := actx.From(ctx)
 			aCtx.SetTraceID(rId)
-			return ctx
+			return aCtx
 		}),
 		// c.mw.Authentication(func(ctx context.Context, headerValue string) context.Context {
 		// 	auth := verifyAuthHeader(ctx, headerValue)
@@ -84,10 +91,9 @@ func isAllowedOrigin(origin string, exactlyOrigins, regexOrigins []string) bool 
 func setDefaultEncoderDecoder() middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			aCtx := actx.From(ctx)
+			aCtx := actx.From(r.Context())
 			aCtx.SetEncoderDecoder(encdec.JSONEncoder(w), encdec.JSONDecoder(r.Body))
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(aCtx))
 		})
 	}
 }

@@ -15,14 +15,14 @@ import (
 )
 
 func lazyRegisterRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
-	mux ReflectionMux,
+	mux PathReflectionMux,
 	method string,
 	path string,
 	meta RouteMeta,
 	handler TypedHandler[ReqParamT, ReqBodyT, RespBodyT, ErrorT],
 	middleware Middleware,
 ) {
-	m, ok := mux.(*reflectionMux)
+	m, ok := mux.(*pathReflectionMux)
 	if !ok {
 		panic(fmt.Sprintf("mux %q is not a reflectionMux", mux))
 	}
@@ -33,7 +33,7 @@ func lazyRegisterRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
 }
 
 func registerRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
-	mux *reflectionMux,
+	mux *pathReflectionMux,
 	method string,
 	path string,
 	meta RouteMeta,
