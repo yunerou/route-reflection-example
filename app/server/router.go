@@ -38,5 +38,5 @@ func (c *SvCmd) router(_ ServerType) http.Handler {
 	// 	),
 	// )
 
-	return rmux.ExtractReflectionMux(coreMux)
+	return coreMux.ExtractHandler()
 }

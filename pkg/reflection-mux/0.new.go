@@ -15,7 +15,7 @@ type reflectionResponse struct {
 	Routes     []RouteInfo `json:"routes"`
 }
 
-func ExtractReflectionMux(m CoreReflectionMux) http.Handler {
+func extractReflectionMux(m CoreReflectionMux) http.Handler {
 	mainMux := http.NewServeMux()
 	allRoutesInfo := []RouteInfo{}
 

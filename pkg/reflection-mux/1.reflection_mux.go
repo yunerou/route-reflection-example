@@ -2,6 +2,7 @@ package reflectionmux
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 )
@@ -43,6 +44,9 @@ func (m *pathReflectionMux) runLazyRegister() {
 		}
 		m.lazyRegisters = nil
 	})
+}
+func (m *coreReflectionMux) ExtractHandler() http.Handler {
+	return extractReflectionMux(m)
 }
 
 func (c *coreReflectionMux) Create(pathPrefix string) PathReflectionMux {

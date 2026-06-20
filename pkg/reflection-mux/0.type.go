@@ -21,6 +21,7 @@ func (r RoutHandler) Handler() http.Handler {
 type CoreReflectionMux interface {
 	Create(PathPrefix string) PathReflectionMux
 	GetAllPaths() map[string]PathReflectionMux // key là path prefix, value là PathReflectionMux tương ứng
+	ExtractHandler() http.Handler
 }
 
 type PathReflectionMux interface {
