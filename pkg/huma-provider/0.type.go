@@ -108,7 +108,7 @@ func extractHuma(m *coreHuma, enableDoc bool) http.Handler {
 }
 
 func humaRegisterRoute[ReqParamT, ReqBodyT, RespBodyT any](
-	api huma.API,
+	core *coreHuma,
 	method string,
 	path string,
 	meta RouteMeta,
@@ -134,12 +134,12 @@ func humaRegisterRoute[ReqParamT, ReqBodyT, RespBodyT any](
 		op.Middlewares = huma.Middlewares{convertToHumaMiddleware(middleware)}
 	}
 
-	huma.Register(api, op, func(ctx context.Context, input *RequestWrapper[ReqParamT, ReqBodyT]) (*ResponseWrapper[RespBodyT], error) {
+	huma.Register(core.humaAPI, op, func(ctx context.Context, input *RequestWrapper[ReqParamT, ReqBodyT]) (*ResponseWrapper[RespBodyT], error) {
 		res := new(ResponseWrapper[RespBodyT])
 		var err error
 		res.Body, err = handler(ctx, input.Params, input.Body)
 		if err != nil {
-			return nil, err
+			return nil, core.convertErrorToHumaSchema(err)
 		}
 		return res, nil
 	})

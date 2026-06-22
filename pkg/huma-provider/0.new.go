@@ -7,16 +7,25 @@ import (
 )
 
 type Config struct {
-	HumaConfig huma.Config
-	CommonInfo CommonInfo
+	HumaConfig               huma.Config
+	ConvertErrorToHumaSchema func(error) huma.StatusError
+	CommonInfo               CommonInfo
+}
+
+func (c *Config) Validate() {
+	if c.ConvertErrorToHumaSchema == nil {
+		panic("ConvertErrorToHumaSchema is required")
+	}
 }
 
 func NewCore(c *Config) CoreHuma {
 	mainMux := http.NewServeMux()
 	return &coreHuma{
-		humaConfig: c.HumaConfig,
-		mainMux:    mainMux,
-		commonInfo: c.CommonInfo,
+		humaConfig:               c.HumaConfig,
+		commonInfo:               c.CommonInfo,
+		convertErrorToHumaSchema: c.ConvertErrorToHumaSchema,
+
+		mainMux: mainMux,
 	}
 }
 

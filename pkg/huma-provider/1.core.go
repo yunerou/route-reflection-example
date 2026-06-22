@@ -11,6 +11,8 @@ import (
 )
 
 type coreHuma struct {
+	convertErrorToHumaSchema func(error) huma.StatusError
+
 	humaConfig huma.Config
 	humaAPI    huma.API
 
@@ -64,11 +66,6 @@ func (m *GroupHuma) runLazyRegister() {
 		}
 		m.lazyRegisters = nil
 	})
-}
-
-func (m *GroupHuma) reflectionRouteInfo() []RouteInfo {
-	m.runLazyRegister()
-	return m.routeInfo
 }
 
 // isValidPathPrefix reports whether prefix contains only path-safe characters:

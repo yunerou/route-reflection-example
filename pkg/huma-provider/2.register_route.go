@@ -88,7 +88,7 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any](
 		}
 	}
 
-	humaRegisterRoute(m.coreHuma.humaAPI, method, fullPath, meta, handler, middleware)
+	humaRegisterRoute(m.coreHuma, method, fullPath, meta, handler, middleware)
 	m.routeInfo = append(m.routeInfo, routeInfo)
 }
 
