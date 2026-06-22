@@ -63,6 +63,14 @@ func (c *SvCmd) configRouter() rmux.CoreHuma {
 	humaConfig := huma.DefaultConfig("example-service", "1.0.0")
 	humaConfig.Formats["application/msgpack"] = msgpackFormat
 
+	huma.NewError = func(status int, msg string, errs ...error) huma.StatusError {
+		slog.Error("humaUnexpected: Response with humaError", slog.Int("status", status), slog.String("message", msg), slog.Any("errs", errs))
+		return &ErrorResponse{
+			status:  status,
+			Code:    "HUMA_UNKNOWN_ERROR",
+			Message: msg,
+		}
+	}
 	coreHuma := rmux.NewCore(
 		&rmux.Config{
 			// EncoderDecoder:     &encdecBase{},
