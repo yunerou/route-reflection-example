@@ -9,11 +9,11 @@ import (
 	"github.com/yunerou/niarb/shared/aerror"
 )
 
-func MsgpackEncoder(w io.Writer) Encoder {
-	e := msgpack.NewEncoder(w)
-	e.SetCustomStructTag("json")
+func MsgpackEncoder() Encoder {
+	return encoderFn(func(ctx context.Context, w io.Writer, v any) aerror.AError {
+		e := msgpack.NewEncoder(w)
+		e.SetCustomStructTag("json")
 
-	return encoderFn(func(ctx context.Context, v any) aerror.AError {
 		err := e.Encode(v)
 		if err != nil {
 			return aerror.New(ctx, aerror.ErrEncoder, err)
@@ -22,11 +22,11 @@ func MsgpackEncoder(w io.Writer) Encoder {
 	})
 }
 
-func MsgpackDecoder(r io.Reader) Decoder {
-	d := msgpack.NewDecoder(r)
-	d.SetCustomStructTag("json")
+func MsgpackDecoder() Decoder {
+	return decoderFn(func(ctx context.Context, r io.Reader, v any) aerror.AError {
+		d := msgpack.NewDecoder(r)
+		d.SetCustomStructTag("json")
 
-	return decoderFn(func(ctx context.Context, v any) aerror.AError {
 		err := d.Decode(v)
 		if err != nil {
 			return aerror.New(ctx, aerror.ErrDecoder, err)
@@ -38,7 +38,7 @@ func MsgpackDecoder(r io.Reader) Decoder {
 func MsgpackMarshaler() Marshaler {
 	return marshalerFn(func(ctx context.Context, v any) ([]byte, aerror.AError) {
 		var buf bytes.Buffer
-		err := MsgpackEncoder(&buf).Encode(ctx, v)
+		err := MsgpackEncoder().Encode(ctx, &buf, v)
 		if err != nil {
 			return nil, err
 		}
@@ -48,6 +48,6 @@ func MsgpackMarshaler() Marshaler {
 
 func MsgpackUnmarshaler() Unmarshaler {
 	return unmarshalerFn(func(ctx context.Context, data []byte, v any) aerror.AError {
-		return MsgpackDecoder(bytes.NewReader(data)).Decode(ctx, v)
+		return MsgpackDecoder().Decode(ctx, bytes.NewReader(data), v)
 	})
 }

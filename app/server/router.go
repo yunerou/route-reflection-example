@@ -2,13 +2,22 @@ package server
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	rmux "github.com/yunerou/niarb/pkg/reflection-mux"
+	"github.com/yunerou/niarb/shared/actx"
 )
 
 func (c *SvCmd) router(_ ServerType) http.Handler {
-	coreMux := rmux.NewCore()
+	coreMux := rmux.NewCore(
+		&rmux.Config{
+			EncoderDecoder: &encdecBase{},
+			CommonInfo: rmux.CommonInfo{
+				ServiceName: "example-service",
+			},
+		},
+	)
 
 	mainMux := coreMux.Create("")
 	rmux.RegisterRoute(mainMux, "GET", "/health",
@@ -39,4 +48,16 @@ func (c *SvCmd) router(_ ServerType) http.Handler {
 	// )
 
 	return coreMux.ExtractHandler()
+}
+
+type encdecBase struct{}
+
+func (c *encdecBase) Encode(ctx context.Context, w io.Writer, v any) error {
+	aCtx := actx.From(ctx)
+	return aCtx.GetEncoder().Encode(ctx, w, v)
+}
+
+func (c *encdecBase) Decode(ctx context.Context, r io.Reader, v any) error {
+	aCtx := actx.From(ctx)
+	return aCtx.GetDecoder().Decode(ctx, r, v)
 }

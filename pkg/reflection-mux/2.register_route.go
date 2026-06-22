@@ -3,15 +3,11 @@ package reflectionmux
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	pathpkg "path"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/yunerou/niarb/shared/actx"
-	"github.com/yunerou/niarb/shared/aerror"
 )
 
 func lazyRegisterRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
@@ -94,7 +90,7 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
 	}
 
 	var httpHandler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqParam, reqBody, parseErr := defaultParseRequest[ReqParamT, ReqBodyT, ErrorT](r)
+		reqParam, reqBody, parseErr := defaultParseRequest[ReqParamT, ReqBodyT, ErrorT](mux.encoderDecoder, r)
 		if any(parseErr) != nil {
 			http.Error(w, error(parseErr).Error(), http.StatusBadRequest)
 			return
@@ -102,10 +98,10 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any, ErrorT error](
 
 		resp, handlerErr := handler(r.Context(), reqParam, reqBody)
 		if any(handlerErr) != nil {
-			defaultWriteError(w, r, error(handlerErr))
+			defaultWriteError(mux.encoderDecoder, mux.convertErrorSchema, w, r, error(handlerErr))
 			return
 		}
-		defaultWriteResponse(w, r, http.StatusOK, resp)
+		defaultWriteResponse(mux.encoderDecoder, w, r, http.StatusOK, resp)
 	})
 	if middleware != nil {
 		httpHandler = middleware(httpHandler)
@@ -181,54 +177,6 @@ func fieldTagName(field reflect.StructField, tag string) (tagValue string, isVal
 	return tagValue, true
 }
 
-func defaultParseRequest[ReqParamT, ReqBodyT any, ErrorT error](r *http.Request) (reqParam ReqParamT, reqBody ReqBodyT, err ErrorT) {
-	var zeroError ErrorT
-
-	pv := reflect.ValueOf(&reqParam).Elem()
-	pt := pv.Type()
-	if pt.Kind() == reflect.Pointer {
-		pv.Set(reflect.New(pt.Elem()))
-		pv = pv.Elem()
-		pt = pt.Elem()
-	}
-	if pt.Kind() == reflect.Struct {
-		query := r.URL.Query()
-		for i := 0; i < pt.NumField(); i++ {
-			field := pt.Field(i)
-			if field.PkgPath != "" {
-				continue
-			}
-
-			var (
-				raw   string
-				found bool
-			)
-			if name, ok := fieldTagName(field, string(SourcePath)); ok {
-				raw, found = r.PathValue(name), true
-			} else if name, ok := fieldTagName(field, string(SourceQuery)); ok {
-				raw, found = query.Get(name), query.Has(name)
-			} else if name, ok := fieldTagName(field, string(SourceHeader)); ok {
-				raw = r.Header.Get(name)
-				found = raw != ""
-			}
-			if !found {
-				continue
-			}
-
-			errParse := setFieldValue(pv.Field(i), raw)
-			if errParse != nil {
-				panic(fmt.Sprintf("failed to parse parameter %q: %v", field.Name, errParse))
-			}
-		}
-	}
-
-	if r.Body != nil && r.ContentLength != 0 {
-		_ = json.NewDecoder(r.Body).Decode(&reqBody)
-	}
-
-	return reqParam, reqBody, zeroError
-}
-
 func setFieldValue(v reflect.Value, raw string) error {
 	switch v.Kind() {
 	case reflect.String:
@@ -261,43 +209,6 @@ func setFieldValue(v reflect.Value, raw string) error {
 		return fmt.Errorf("unsupported field type %s", v.Type())
 	}
 	return nil
-}
-
-func defaultWriteResponse(w http.ResponseWriter, r *http.Request, status int, body any) {
-	w.WriteHeader(status)
-	if body == nil {
-		return
-	}
-	encoder := actx.From(r.Context()).GetEncoder()
-	if aerr := encoder.Encode(r.Context(), body); aerr != nil {
-		slog.Error("delivery: write response failed", slog.Any("err", aerr))
-	}
-}
-
-func defaultWriteError(w http.ResponseWriter, r *http.Request, err error) {
-	aerr, ok := err.(aerror.AError)
-	if !ok {
-		slog.Error("delivery: request failed with non-AppError. Response default message", slog.Any("err", err), slog.String("path", r.URL.Path))
-		defaultWriteResponse(w, r, http.StatusInternalServerError, map[string]any{
-			"Code":    "InternalServerError",
-			"Message": "An unexpected error occurred",
-		})
-		return
-	}
-	defaultWriteAError(w, r, aerr)
-}
-
-func defaultWriteAError(w http.ResponseWriter, r *http.Request, aerr aerror.AError) {
-	code := aerr.ErrorCode()
-	slog.InfoContext(r.Context(), "delivery: request failed",
-		slog.String("code", code.Code()),
-		slog.Int("http", code.HttpCode()),
-		slog.String("path", r.URL.Path),
-	)
-	defaultWriteResponse(w, r, code.HttpCode(), map[string]any{
-		"Code":    code.Code(),
-		"Message": code.Error(),
-	})
 }
 
 func fetchDocComment(structType reflect.Type, field reflect.StructField) string {

@@ -69,6 +69,7 @@ type RouteMeta struct {
 }
 
 type CommonInfo struct {
+	ServiceName         string
 	RequestHeaders      map[string]string // Key là tên header, value là mô tả header đó. Dùng để document chung cho tất cả route.
 	ResponseHeaders     map[string]string // Key là tên header, value là mô tả header đó. Dùng để document chung cho tất cả route.
 	ErrorResponseSchema json.RawMessage   // JSON schema của error response, nếu có trả về.

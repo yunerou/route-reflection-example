@@ -9,10 +9,9 @@ import (
 	"github.com/yunerou/niarb/shared/aerror"
 )
 
-func JSONEncoder(w io.Writer) Encoder {
-	e := json.NewEncoder(w)
-	return encoderFn(func(ctx context.Context, v any) aerror.AError {
-		err := e.Encode(v)
+func JSONEncoder() Encoder {
+	return encoderFn(func(ctx context.Context, w io.Writer, v any) aerror.AError {
+		err := json.NewEncoder(w).Encode(v)
 		if err != nil {
 			return aerror.New(ctx, aerror.ErrEncoder, err)
 		}
@@ -20,10 +19,9 @@ func JSONEncoder(w io.Writer) Encoder {
 	})
 }
 
-func JSONDecoder(r io.Reader) Decoder {
-	d := json.NewDecoder(r)
-	return decoderFn(func(ctx context.Context, v any) aerror.AError {
-		err := d.Decode(v)
+func JSONDecoder() Decoder {
+	return decoderFn(func(ctx context.Context, r io.Reader, v any) aerror.AError {
+		err := json.NewDecoder(r).Decode(v)
 		if err != nil {
 			return aerror.New(ctx, aerror.ErrDecoder, err)
 		}
@@ -34,7 +32,7 @@ func JSONDecoder(r io.Reader) Decoder {
 func JSONMarshaler() Marshaler {
 	return marshalerFn(func(ctx context.Context, v any) ([]byte, aerror.AError) {
 		var buf bytes.Buffer
-		err := JSONEncoder(&buf).Encode(ctx, v)
+		err := JSONEncoder().Encode(ctx, &buf, v)
 		if err != nil {
 			return nil, err
 		}
@@ -49,6 +47,6 @@ func JSONMarshaler() Marshaler {
 
 func JSONUnmarshaler() Unmarshaler {
 	return unmarshalerFn(func(ctx context.Context, data []byte, v any) aerror.AError {
-		return JSONDecoder(bytes.NewReader(data)).Decode(ctx, v)
+		return JSONDecoder().Decode(ctx, bytes.NewReader(data), v)
 	})
 }

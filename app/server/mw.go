@@ -92,7 +92,7 @@ func setDefaultEncoderDecoder() middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			aCtx := actx.From(r.Context())
-			aCtx.SetEncoderDecoder(encdec.JSONEncoder(w), encdec.JSONDecoder(r.Body))
+			aCtx.SetEncoderDecoder(encdec.JSONEncoder(), encdec.JSONDecoder())
 			next.ServeHTTP(w, r.WithContext(aCtx))
 		})
 	}

@@ -25,12 +25,12 @@ func (mw *middlewareProvider) EncoderDecoder() Middleware {
 				contentType string
 			)
 			if wantsMsgpack(r) {
-				enc = encdec.MsgpackEncoder(w)
-				dec = encdec.MsgpackDecoder(r.Body)
+				enc = encdec.MsgpackEncoder()
+				dec = encdec.MsgpackDecoder()
 				contentType = contentTypeMsgpack
 			} else {
-				enc = encdec.JSONEncoder(w)
-				dec = encdec.JSONDecoder(r.Body)
+				enc = encdec.JSONEncoder()
+				dec = encdec.JSONDecoder()
 				contentType = contentTypeJSON
 			}
 

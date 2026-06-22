@@ -22,7 +22,7 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, status int, body any)
 		return
 	}
 	encoder := actx.From(r.Context()).GetEncoder()
-	if aerr := encoder.Encode(r.Context(), body); aerr != nil {
+	if aerr := encoder.Encode(r.Context(), w, body); aerr != nil {
 		slog.Error("delivery: write response failed", slog.Any("err", aerr))
 	}
 }

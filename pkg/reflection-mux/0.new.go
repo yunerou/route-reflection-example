@@ -6,8 +6,19 @@ import (
 	"net/http"
 )
 
-func NewCore() CoreReflectionMux {
-	return &coreReflectionMux{}
+type Config struct {
+	EncoderDecoder     EncoderDecoder
+	ConvertErrorSchema func(error) (httpStatus int, body any)
+
+	CommonInfo CommonInfo
+}
+
+func NewCore(c *Config) CoreReflectionMux {
+	return &coreReflectionMux{
+		encoderDecoder:     c.EncoderDecoder,
+		convertErrorSchema: c.ConvertErrorSchema,
+		commonInfo:         c.CommonInfo,
+	}
 }
 
 type reflectionResponse struct {

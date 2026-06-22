@@ -8,7 +8,9 @@ import (
 )
 
 type coreReflectionMux struct {
-	commonInfo CommonInfo
+	encoderDecoder     EncoderDecoder
+	convertErrorSchema func(error) (httpStatus int, body any)
+	commonInfo         CommonInfo
 
 	paths map[string]PathReflectionMux
 }
@@ -91,3 +93,34 @@ func isValidPathPrefix(prefix string) bool {
 func (c *coreReflectionMux) GetAllPaths() map[string]PathReflectionMux {
 	return c.paths
 }
+
+/*
+
+func defaultWriteError(de EncoderDecoder, w http.ResponseWriter, r *http.Request, err error) {
+	aerr, ok := err.(aerror.AError)
+	if !ok {
+		ctx := r.Context()
+		slog.ErrorContext(ctx, "delivery: request failed with non-AppError. Response default message", slog.Any("err", err), slog.String("path", r.URL.Path))
+		defaultWriteResponse(de, w, r, http.StatusInternalServerError, map[string]any{
+			"Code":    "InternalServerError",
+			"Message": "An unexpected error occurred",
+		})
+		return
+	}
+	defaultWriteAError(de, w, r, aerr)
+}
+
+func defaultWriteAError(de EncoderDecoder, w http.ResponseWriter, r *http.Request, aerr aerror.AError) {
+	code := aerr.ErrorCode()
+	ctx := r.Context()
+	slog.InfoContext(ctx, "delivery: request failed",
+		slog.String("code", code.Code()),
+		slog.Int("http", code.HttpCode()),
+		slog.String("path", r.URL.Path),
+	)
+	defaultWriteResponse(de, w, r, code.HttpCode(), map[string]any{
+		"Code":    code.Code(),
+		"Message": code.Error(),
+	})
+}
+*/
