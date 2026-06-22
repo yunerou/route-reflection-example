@@ -14,6 +14,7 @@ type middleware = func(http.Handler) http.Handler
 
 func (c *SvCmd) simpleMiddleware(h http.Handler) http.Handler {
 	mw := []middleware{
+		injectContext(),
 		setDefaultEncoderDecoder(),
 	}
 	return chainMiddleware(h, mw...)
@@ -23,6 +24,7 @@ func (c *SvCmd) allMiddilewares(h http.Handler) http.Handler {
 	e := c.c.Env()
 
 	mw := []middleware{
+		injectContext(),
 		setDefaultEncoderDecoder(),
 		c.mw.JSONLogFmt(nil),
 		c.mw.RequestID(func(ctx context.Context, rId string) context.Context {
@@ -93,6 +95,15 @@ func setDefaultEncoderDecoder() middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			aCtx := actx.From(r.Context())
 			aCtx.SetEncoderDecoder(encdec.JSONEncoder(), encdec.JSONDecoder())
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func injectContext() middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			aCtx := actx.From(r.Context())
 			next.ServeHTTP(w, r.WithContext(aCtx))
 		})
 	}

@@ -15,7 +15,7 @@ type EncoderDecoder interface {
 	Decode(ctx context.Context, r io.Reader, v any) error
 }
 
-func defaultWriteResponse(de EncoderDecoder, w http.ResponseWriter, r *http.Request, status int, body any) {
+func writeResponse(de EncoderDecoder, w http.ResponseWriter, r *http.Request, status int, body any) {
 	w.WriteHeader(status)
 	if body == nil {
 		return
@@ -26,13 +26,12 @@ func defaultWriteResponse(de EncoderDecoder, w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func defaultWriteError(de EncoderDecoder, convertErrorSchema func(error) (int, any), w http.ResponseWriter, r *http.Request, err error) {
+func writeError(de EncoderDecoder, convertErrorSchema func(error) (int, any), w http.ResponseWriter, r *http.Request, err error) {
 	status, errBody := convertErrorSchema(err)
-	defaultWriteResponse(de, w, r, status, errBody)
-	return
+	writeResponse(de, w, r, status, errBody)
 }
 
-func defaultParseRequest[ReqParamT, ReqBodyT any, ErrorT error](de EncoderDecoder, r *http.Request) (reqParam ReqParamT, reqBody ReqBodyT, err ErrorT) {
+func parseRequest[ReqParamT, ReqBodyT any, ErrorT error](de EncoderDecoder, r *http.Request) (reqParam ReqParamT, reqBody ReqBodyT, err ErrorT) {
 	var zeroError ErrorT
 
 	pv := reflect.ValueOf(&reqParam).Elem()
