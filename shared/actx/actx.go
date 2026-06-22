@@ -3,17 +3,12 @@ package actx
 import (
 	"context"
 	"sync"
-
-	"github.com/yunerou/niarb/shared/encdec"
 )
 
 type alterData struct {
 	m sync.Mutex
 
 	name string
-
-	encoder encdec.Encoder
-	decoder encdec.Decoder
 
 	traceId       string
 	parentTraceId []string
@@ -43,10 +38,8 @@ func From(ctx context.Context) AContext {
 		}
 	} else {
 		newAData := alterData{
-			m:       sync.Mutex{},
-			userIp:  "",
-			encoder: nil,
-			decoder: nil,
+			m:      sync.Mutex{},
+			userIp: "",
 		}
 		ctx = context.WithValue(ctx, privKey, &newAData)
 		return &aContext{

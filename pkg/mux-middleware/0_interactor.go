@@ -23,7 +23,7 @@ type MiddlewareProvider interface {
 	PanicRecover() Middleware
 	Otel() Middleware
 	Skip(mw Middleware, skipCondFn func(*http.Request) bool) Middleware
-	EncoderDecoder() Middleware
+	// EncoderDecoder() Middleware
 }
 
 type MWConfig struct {

@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/yunerou/niarb/shared/actx"
-	"github.com/yunerou/niarb/shared/encdec"
 )
 
 type middleware = func(http.Handler) http.Handler
@@ -15,7 +14,6 @@ type middleware = func(http.Handler) http.Handler
 func (c *SvCmd) simpleMiddleware(h http.Handler) http.Handler {
 	mw := []middleware{
 		injectContext(),
-		setDefaultEncoderDecoder(),
 	}
 	return chainMiddleware(h, mw...)
 }
@@ -25,7 +23,6 @@ func (c *SvCmd) allMiddilewares(h http.Handler) http.Handler {
 
 	mw := []middleware{
 		injectContext(),
-		setDefaultEncoderDecoder(),
 		c.mw.JSONLogFmt(nil),
 		c.mw.RequestID(func(ctx context.Context, rId string) context.Context {
 			aCtx := actx.From(ctx)
@@ -38,7 +35,6 @@ func (c *SvCmd) allMiddilewares(h http.Handler) http.Handler {
 		// 	return ctx
 		// }),
 		c.mw.PanicRecover(),
-		c.mw.EncoderDecoder(),
 		// c.mw.InjectCmdQueue(),
 	}
 	if e.Otel.Enabled {
@@ -88,16 +84,6 @@ func isAllowedOrigin(origin string, exactlyOrigins, regexOrigins []string) bool 
 		}
 	}
 	return false
-}
-
-func setDefaultEncoderDecoder() middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			aCtx := actx.From(r.Context())
-			aCtx.SetEncoderDecoder(encdec.JSONEncoder(), encdec.JSONDecoder())
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 func injectContext() middleware {

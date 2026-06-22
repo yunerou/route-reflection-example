@@ -2,6 +2,7 @@ package muxmiddleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/yunerou/niarb/shared/actx"
 	"github.com/yunerou/niarb/shared/encdec"
@@ -11,6 +12,12 @@ const (
 	contentTypeMsgpack = "application/msgpack"
 	contentTypeJSON    = "application/json; charset=utf-8"
 )
+
+// wantsMsgpack returns true when the request Accept header includes msgpack.
+func wantsMsgpack(r *http.Request) bool {
+	accept := r.Header.Get("Accept")
+	return strings.Contains(accept, contentTypeMsgpack)
+}
 
 // EncoderDecoder picks an encoder/decoder pair based on the request Accept
 // header (msgpack when wantsMsgpack reports true, otherwise JSON), stores
