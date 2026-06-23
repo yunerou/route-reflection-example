@@ -81,3 +81,38 @@ func TestGomux_PostWithBody(t *testing.T) {
 		t.Fatalf("got %s", out)
 	}
 }
+
+func TestGomux_ReflectionGated(t *testing.T) {
+	r := New(testConfig())
+	g := r.Create("/users")
+	RegisterRoute(g, "GET", "/{id}", muxrouter.RouteMeta{Summary: "get user"},
+		func(_ context.Context, p getParam, _ struct{}) (getResp, error) {
+			return getResp{ID: p.ID}, nil
+		}, nil)
+
+	// enableDoc=false -> 404
+	off := httptest.NewServer(r.ExtractHandler(false))
+	defer off.Close()
+	resp, _ := off.Client().Get(off.URL + "/__reflection")
+	if resp.StatusCode != 404 {
+		t.Fatalf("expected 404 when docs disabled, got %d", resp.StatusCode)
+	}
+
+	// enableDoc=true -> 200 with the route listed
+	r2 := New(testConfig())
+	g2 := r2.Create("/users")
+	RegisterRoute(g2, "GET", "/{id}", muxrouter.RouteMeta{Summary: "get user"},
+		func(_ context.Context, p getParam, _ struct{}) (getResp, error) {
+			return getResp{ID: p.ID}, nil
+		}, nil)
+	on := httptest.NewServer(r2.ExtractHandler(true))
+	defer on.Close()
+	resp2, _ := on.Client().Get(on.URL + "/__reflection")
+	if resp2.StatusCode != 200 {
+		t.Fatalf("expected 200, got %d", resp2.StatusCode)
+	}
+	body, _ := io.ReadAll(resp2.Body)
+	if !strings.Contains(string(body), "/users/{id}") {
+		t.Fatalf("reflection missing route: %s", body)
+	}
+}
