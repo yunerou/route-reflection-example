@@ -16,5 +16,5 @@ func RegisterRoute[ReqParamT, ReqBodyT, RespBodyT any](
 	g *Group, method, path string, meta mr.RouteMeta,
 	handler mr.TypedHandler[ReqParamT, ReqBodyT, RespBodyT], mw mr.Middleware,
 ) {
-	gomux.RegisterRoute[ReqParamT, ReqBodyT, RespBodyT](g, method, path, meta, handler, mw)
+	gomux.RegisterRoute(g, method, path, meta, handler, mw)
 }

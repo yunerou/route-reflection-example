@@ -83,7 +83,11 @@ func (r *Router) buildHumaConfig(enableDoc bool) huma2.Config {
 			}
 		}
 		cfg.Formats = formats
-		cfg.DefaultFormat = muxrouter.JsonHeaders[0]
+		if _, ok := formats[r.config.DefaultFormat]; ok && r.config.DefaultFormat != "" {
+			cfg.DefaultFormat = r.config.DefaultFormat
+		} else {
+			cfg.DefaultFormat = muxrouter.JsonHeaders[0]
+		}
 	}
 	if !enableDoc {
 		cfg.DocsPath = ""

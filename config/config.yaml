@@ -1,6 +1,8 @@
 INFO:
   ENV: "dev"
   POD_NAME: "niarb-pod-1"
+  APP_NAME: RouteReflectionExample
+  VERSION: v1.0.0
 
 AUTO_MIGRATION: true
 

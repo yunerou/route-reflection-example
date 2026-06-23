@@ -27,10 +27,15 @@ type StatusError interface {
 
 // Config is shared by every adapter so application code is build-tag agnostic.
 type Config struct {
-	Formats      []RegisterFormat
-	ConvertError func(error) StatusError
-	CommonInfo   CommonInfo
-	Doc          DocConfig // huma only; gomux ignores
+	Formats []RegisterFormat
+	// DefaultFormat is the content-type header used to (de)serialize a body
+	// when the request sends no Accept/Content-Type (or one that matches no
+	// registered format). It must reference a header present in Formats (or a
+	// built-in such as muxrouter.JsonHeaders[0]). Empty selects JSON.
+	DefaultFormat string
+	ConvertError  func(error) StatusError
+	CommonInfo    CommonInfo
+	Doc           DocConfig // huma only; gomux ignores
 }
 
 var (

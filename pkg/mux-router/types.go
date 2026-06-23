@@ -2,7 +2,6 @@ package muxrouter
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"reflect"
 )
@@ -45,10 +44,9 @@ func ChainMiddleware(middlewares ...Middleware) Middleware {
 
 // CommonInfo documents service-wide metadata shared across routes.
 type CommonInfo struct {
-	ServiceName         string
-	RequestHeaders      map[string]string
-	ResponseHeaders     map[string]string
-	ErrorResponseSchema json.RawMessage
+	ServiceName     string
+	RequestHeaders  map[string]string
+	ResponseHeaders map[string]string
 }
 
 // DocConfig configures documentation output. Only the huma adapter consumes it;

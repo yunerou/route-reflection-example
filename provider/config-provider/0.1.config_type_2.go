@@ -9,6 +9,9 @@ import (
 type InfoT struct {
 	Env     string `koanf:"ENV"`
 	PodName string `koanf:"POD_NAME"`
+
+	AppName string `koanf:"APP_NAME"`
+	Version string `koanf:"VERSION"`
 }
 
 func (r *InfoT) validate() {

@@ -46,7 +46,7 @@ func New(c muxrouter.Config) *Router {
 		panic("muxrouter.Config.ConvertError is required")
 	}
 	return &Router{
-		codec:        newCodec(c.Formats),
+		codec:        newCodec(c.Formats, c.DefaultFormat),
 		convertError: c.ConvertError,
 		commonInfo:   c.CommonInfo,
 		paths:        map[string]*Group{},

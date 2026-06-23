@@ -14,15 +14,18 @@ type codec struct {
 	def    muxrouter.Format // default when nothing matches
 }
 
-func newCodec(formats []muxrouter.RegisterFormat) *codec {
+func newCodec(formats []muxrouter.RegisterFormat, defaultFormat string) *codec {
 	c := &codec{byType: map[string]muxrouter.Format{}}
 	for _, rf := range formats {
 		for _, h := range rf.Headers {
 			c.byType[h] = rf.Formats
 		}
 	}
-	// Default: first registered JSON header, else built-in sonic JSON.
-	if f, ok := c.byType[muxrouter.JsonHeaders[0]]; ok {
+	// Default: the configured DefaultFormat if registered, else first
+	// registered JSON header, else built-in sonic JSON.
+	if f, ok := c.byType[defaultFormat]; ok && defaultFormat != "" {
+		c.def = f
+	} else if f, ok := c.byType[muxrouter.JsonHeaders[0]]; ok {
 		c.def = f
 	} else {
 		c.def = muxrouter.JsonSonicFormat

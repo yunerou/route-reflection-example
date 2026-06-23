@@ -16,5 +16,5 @@ func RegisterRoute[ReqParamT, ReqBodyT, RespBodyT any](
 	g *Group, method, path string, meta mr.RouteMeta,
 	handler mr.TypedHandler[ReqParamT, ReqBodyT, RespBodyT], mw mr.Middleware,
 ) {
-	huma.RegisterRoute[ReqParamT, ReqBodyT, RespBodyT](g, method, path, meta, handler, mw)
+	huma.RegisterRoute(g, method, path, meta, handler, mw)
 }

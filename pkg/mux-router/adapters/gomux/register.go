@@ -34,7 +34,7 @@ func RegisterRoute[ReqParamT, ReqBodyT, RespBodyT any](
 			resp, hErr := handler(req.Context(), param, body)
 			if hErr != nil {
 				se := convertError(hErr)
-				c.encodeResponse(w, req, se.GetStatus(), map[string]string{"error": se.Error()})
+				c.encodeResponse(w, req, se.GetStatus(), se)
 				return
 			}
 			c.encodeResponse(w, req, http.StatusOK, resp)
