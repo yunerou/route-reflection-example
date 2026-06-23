@@ -1,7 +1,6 @@
 package muxrouter
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	pathpkg "path"
@@ -9,24 +8,15 @@ import (
 	"strings"
 )
 
-func registerRoute[ReqParamT, ReqBodyT, RespBodyT any](
-	m *GroupRouter,
-	method string,
-	path string,
-	meta RouteMeta,
-	handler TypedHandler[ReqParamT, ReqBodyT, RespBodyT],
-	middleware Middleware,
-) {
-	if !isValidHTTPMethod(method) {
-		panic(fmt.Sprintf("invalid HTTP method %q for route %q", method, path))
+// ValidateRoute checks the method and reconciles path parameters declared in the
+// route pattern against `path`-tagged fields of ReqParamT, panicking on mismatch.
+// It returns the reflect.Type info used by adapters to build docs/schemas.
+func ValidateRoute[ReqParamT, ReqBodyT, RespBodyT any](method, fullPath string) RouteTypeInfo {
+	if !IsValidHTTPMethod(method) {
+		panic(fmt.Sprintf("invalid HTTP method %q for route %q", method, fullPath))
 	}
 
-	joined := pathpkg.Join(m.prefixRoute, path)
-	if !strings.HasPrefix(joined, "/") {
-		joined = "/" + joined
-	}
-	fullPath := joined
-	pathParams := extractPathParams(fullPath)
+	pathParams := ExtractPathParams(fullPath)
 
 	reqType := reflect.TypeFor[ReqParamT]()
 	if reqType.Kind() == reflect.Pointer {
@@ -40,8 +30,7 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any](
 			if field.PkgPath != "" {
 				continue
 			}
-
-			if name, ok := fieldTagName(field, string(SourcePath)); ok {
+			if name, ok := FieldTagName(field, string(SourcePath)); ok {
 				if _, exists := pathParams[name]; !exists {
 					panic(fmt.Sprintf("path parameter %q in request type %s does not exist in route path %q", name, reqType.String(), fullPath))
 				}
@@ -59,35 +48,46 @@ func registerRoute[ReqParamT, ReqBodyT, RespBodyT any](
 		}
 	}
 
-	typeInfo := RouteTypeInfo{
+	return RouteTypeInfo{
 		ReqParamType: reqType,
 		ReqBodyType:  reflect.TypeFor[ReqBodyT](),
 		RespBodyType: reflect.TypeFor[RespBodyT](),
 	}
-	erasedHandler := func(ctx context.Context, reqParam, reqBody any) (any, error) {
-		return handler(ctx, reqParam.(ReqParamT), reqBody.(ReqBodyT))
-	}
-	m.base.adapter.RegisterRoute(method, fullPath, meta, middleware, typeInfo, erasedHandler)
 }
 
-func isValidHTTPMethod(method string) bool {
+// JoinPath joins a prefix and a path and ensures a leading slash.
+func JoinPath(prefix, path string) string {
+	joined := pathpkg.Join(prefix, path)
+	if !strings.HasPrefix(joined, "/") {
+		joined = "/" + joined
+	}
+	return joined
+}
+
+func IsValidHTTPMethod(method string) bool {
 	switch method {
-	case http.MethodGet,
-		http.MethodHead,
-		http.MethodPost,
-		http.MethodPut,
-		http.MethodPatch,
-		http.MethodDelete,
-		http.MethodConnect,
-		http.MethodOptions,
-		http.MethodTrace:
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut,
+		http.MethodPatch, http.MethodDelete, http.MethodConnect,
+		http.MethodOptions, http.MethodTrace:
 		return true
 	default:
 		return false
 	}
 }
 
-func extractPathParams(path string) map[string]struct{} {
+func IsValidPathPrefix(prefix string) bool {
+	for _, r := range prefix {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9',
+			r == '-', r == '_', r == '.', r == '/':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func ExtractPathParams(path string) map[string]struct{} {
 	params := map[string]struct{}{}
 	for start := strings.IndexByte(path, '{'); start != -1; start = strings.IndexByte(path, '{') {
 		path = path[start+1:]
@@ -111,7 +111,7 @@ func extractPathParams(path string) map[string]struct{} {
 	return params
 }
 
-func fieldTagName(field reflect.StructField, tag string) (tagValue string, isValid bool) {
+func FieldTagName(field reflect.StructField, tag string) (tagValue string, isValid bool) {
 	value, ok := field.Tag.Lookup(tag)
 	if !ok || value == "-" {
 		return "", false

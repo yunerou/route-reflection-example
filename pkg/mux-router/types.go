@@ -2,6 +2,7 @@ package muxrouter
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"reflect"
 )
@@ -14,15 +15,7 @@ const (
 	SourceHeader ParamSource = "header"
 )
 
-type MuxRouter interface {
-	Create(PathPrefix string) *GroupRouter
-	ExtractHandler() http.Handler
-}
-
-var (
-	_ MuxRouter = (*coreMuxRouter)(nil)
-)
-
+// TypedHandler is the generic handler shape every adapter registers.
 type TypedHandler[ReqParamT, ReqBodyT, RespBodyT any] = func(ctx context.Context, reqParam ReqParamT, reqBody ReqBodyT) (RespBodyT, error)
 
 type RouteMeta struct {
@@ -33,7 +26,6 @@ type RouteMeta struct {
 }
 
 // RouteTypeInfo carries the concrete reflect.Type for each generic parameter.
-// Adapters use this to build documentation schemas without needing generics.
 type RouteTypeInfo struct {
 	ReqParamType reflect.Type
 	ReqBodyType  reflect.Type
@@ -49,4 +41,21 @@ func ChainMiddleware(middlewares ...Middleware) Middleware {
 		}
 		return final
 	}
+}
+
+// CommonInfo documents service-wide metadata shared across routes.
+type CommonInfo struct {
+	ServiceName         string
+	RequestHeaders      map[string]string
+	ResponseHeaders     map[string]string
+	ErrorResponseSchema json.RawMessage
+}
+
+// DocConfig configures documentation output. Only the huma adapter consumes it;
+// the gomux adapter ignores it.
+type DocConfig struct {
+	Title       string
+	Version     string
+	DocsPath    string // e.g. "/docs"
+	OpenAPIPath string // e.g. "/openapi.json"
 }
