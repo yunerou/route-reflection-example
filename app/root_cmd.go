@@ -4,20 +4,17 @@ import (
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
 	"github.com/yunerou/niarb/app/server"
-	"github.com/yunerou/niarb/app/task"
 )
 
 type CmdApp struct {
 	*cli.App
 
 	s *server.SvCmd
-	t *task.TaskCmd
 }
 
 func NewCmdApp(i do.Injector) *CmdApp {
 	app := &CmdApp{
 		s: do.MustInvoke[*server.SvCmd](i),
-		t: do.MustInvoke[*task.TaskCmd](i),
 	}
 	app.App = &cli.App{
 		EnableBashCompletion: true,

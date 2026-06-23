@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"runtime"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/vmihailenco/msgpack/v5"
@@ -65,6 +66,7 @@ func (c *SvCmd) configRouter() rmux.CoreHuma {
 
 	huma.NewError = func(status int, msg string, errs ...error) huma.StatusError {
 		slog.Error("humaUnexpected: Response with humaError", slog.Int("status", status), slog.String("message", msg), slog.Any("errs", errs))
+		printStacktrace()
 		return &ErrorResponse{
 			status:  status,
 			Code:    "HUMA_UNKNOWN_ERROR",
@@ -83,4 +85,10 @@ func (c *SvCmd) configRouter() rmux.CoreHuma {
 		},
 	)
 	return coreHuma
+}
+
+func printStacktrace() {
+	buf := make([]byte, 1<<16)
+	n := runtime.Stack(buf, false)
+	slog.Info("stacktrace", slog.String("stacktrace", string(buf[:n])))
 }
